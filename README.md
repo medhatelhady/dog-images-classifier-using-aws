@@ -19,8 +19,8 @@ Upload the data to an S3 bucket through the AWS so that SageMaker has access to 
 os.environ["DEFAULT_S3_BUCKET"] = bucket
 !aws s3 sync ./dogImages s3://${DEFAULT_S3_BUCKET}/dogImages --quiet
 ```
-<img src='image/data-1.png'>
-<img src='image/data-2.png'>
+<img src='images/data-1.png'>
+<img src='images/data-2.png'>
 
 ## Hyperparameter Tuning
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
