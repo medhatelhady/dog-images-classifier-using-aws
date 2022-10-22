@@ -25,6 +25,7 @@ os.environ["DEFAULT_S3_BUCKET"] = bucket
 ## Hyperparameter Tuning
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
 <img src='images\hyperparameter-tuning.png'>
+<img src='images\tuning-rest.png'>
 i used **resnet50** pretrained model as an intial model to start training. i tuned couple of hyperparameters like 
 * learn rate
 * batch size
@@ -54,13 +55,13 @@ profilers to detect:
 - GPU utilization
 
 ### Results
-**TODO**: What are the results/insights did you get by profiling/debugging your model?
+What are the results/insights did you get by profiling/debugging your model?
 according to the profiling and debugging, the model has poor intial weights. the model was suffering from overfitting but the debugger didn't detect that and it was obivious because the train accuracy exceed 90% while valid accuracy was less than 80%. 
 
 ## Model Deployment
-**TODO**: Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
+Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
 
+the model works with jpeg images. so image must be convert before inference. the code of deployment is in python file called `deploy.py`
 **TODO** Remember to provide a screenshot of the deployed active endpoint in Sagemaker.
 
-## Standout Suggestions
-**TODO (Optional):** This is where you can provide information about any standout suggestions that you have attempted.
+
