@@ -24,7 +24,7 @@ os.environ["DEFAULT_S3_BUCKET"] = bucket
 
 ## Hyperparameter Tuning
 What kind of model did you choose for this experiment and why? Give an overview of the types of parameters and their ranges used for the hyperparameter search
-
+<img src='images\hyperparameter-tuning.png'>
 i used **resnet50** pretrained model as an intial model to start training. i tuned couple of hyperparameters like 
 * learn rate
 * batch size
