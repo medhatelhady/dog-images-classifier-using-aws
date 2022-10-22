@@ -62,6 +62,6 @@ according to the profiling and debugging, the model has poor intial weights. the
 Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
 
 the model works with jpeg images. so image must be convert before inference. the code of deployment is in python file called `deploy.py`
-**TODO** Remember to provide a screenshot of the deployed active endpoint in Sagemaker.
 
+<img src='images\endpoint.png'>
 
