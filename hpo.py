@@ -21,10 +21,11 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 
+
 # train and test the mode and save best results
 def train_model(model, dataloaders, criterion, optimizer, num_epochs, device):
     since = time.time()
-    
+
     val_acc_history = []
     
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -76,10 +77,10 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, device):
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc*100))
 
             # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
+            if phase == 'valid' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-            if phase == 'val':
+            if phase == 'valid':
                 val_acc_history.append(epoch_acc)
 
         print()
@@ -90,8 +91,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, device):
 
     # load best model weights
     model.load_state_dict(best_model_wts)
-
-
+    return model, val_acc_history
+    
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
@@ -178,8 +179,9 @@ def main(args):
     '''
     # Top level data directory. Here we assume the format of the directory conforms 
     #   to the ImageFolder structure
-    data_dir = args.data
-
+    data_dir = args.data_dir
+    
+    model_dir = args.model_dir
     # Models to choose from [resnet, alexnet, vgg, squeezenet, densenet, inception]
     model_name = args.model_name
 
@@ -195,12 +197,8 @@ def main(args):
     # Flag for feature extracting. When False, we finetune the whole model, 
     #   when True we only update the reshaped layer params
     feature_extract = True
-
     model_ft, input_size = initialize_model(model_name, num_classes, feature_extract, use_pretrained=True)
-    # Detect if we have a GPU available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-   # Send the model to GPU
-    model_ft = model_ft.to(device)
+
     # Data augmentation and normalization for training
     # Just normalization for validation
     data_transforms = {
@@ -221,12 +219,18 @@ def main(args):
     print("Initializing Datasets and Dataloaders...")
 
     # Create training and validation datasets
+    #image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'valid']}
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'valid']}
     # Create training and validation dataloaders
     dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size, shuffle=True) for x in ['train', 'valid']}
 
+    
 
 
+    # Detect if we have a GPU available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   # Send the model to GPU
+    model_ft = model_ft.to(device)
 
     # Gather the parameters to be optimized/updated in this run. If we are
     #  finetuning we will be updating all parameters. However, if we are 
@@ -256,8 +260,7 @@ def main(args):
     '''
     model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, num_epochs=num_epochs, device=device)
     
-    #save the model
-    torch.save(model_ft.state_dict(), 's3://sagemaker-us-east-1-596746000306/weigths/model_weights.pth')
+    torch.save(model_ft.state_dict(), os.path.join(model_dir, 'model.pt'))
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
@@ -274,7 +277,7 @@ if __name__=='__main__':
     parser.add_argument(
         "--epochs",
         type=int,
-        default=10,
+        default=1,
         help="Number of epochs to train (default=10)"
     )
 
@@ -291,10 +294,25 @@ if __name__=='__main__':
         default=0.001,
         help="learning rate to train model"
     )
+    '''
+    parser.add_argument(
+        "--train-data-dir",
+        type=str,
+        default=os.environ['SM_CHANNEL_TRAINING'],
+        help='default direction'
+    )
+    parser.add_argument(
+        "--valid-data-dir",
+        type=str,
+        default=os.environ['SM_CHANNEL_VALIDING'],
+        help='default direction'
+    )
+    '''
+    
+    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN'], help='default direction')
+    parser.add_argument('--model-dir', type=str, default=os.environ['SM_MODEL_DIR'], help='default direction')
 
-    parser.add_argument('--data', type = str, default='s3://sagemaker-us-east-1-596746000306/dogImages')
-    parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
-    parser.add_argument('--output_dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
+    
     args=parser.parse_args()
     
     main(args)

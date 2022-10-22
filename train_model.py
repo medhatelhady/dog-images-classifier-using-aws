@@ -34,15 +34,15 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, device, ho
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
-
+        
         # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
+        for phase in ['train', 'valid']:
             if phase == 'train':
                 model.train()  # Set model to training mode
-                hook.set_mode(hook.modes.TRAIN)
+                hook.set_mode(smd.modes.TRAIN)
             else:
                 model.eval()   # Set model to evaluate mode
-                hook.set_mode(hook.modes.EVAL)
+                hook.set_mode(smd.modes.EVAL)
 
             running_loss = 0.0
             running_corrects = 0
@@ -79,10 +79,10 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, device, ho
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc*100))
 
             # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
+            if phase == 'valid' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-            if phase == 'val':
+            if phase == 'valid':
                 val_acc_history.append(epoch_acc)
 
         print()
@@ -93,6 +93,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, device, ho
 
     # load best model weights
     model.load_state_dict(best_model_wts)
+    return model, val_acc_history
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -181,8 +182,9 @@ def main(args):
     '''
     # Top level data directory. Here we assume the format of the directory conforms 
     #   to the ImageFolder structure
-    data_dir = "dogImages"
-
+    data_dir = args.data_dir
+    
+    model_dir = args.model_dir
     # Models to choose from [resnet, alexnet, vgg, squeezenet, densenet, inception]
     model_name = args.model_name
 
@@ -198,6 +200,7 @@ def main(args):
     # Flag for feature extracting. When False, we finetune the whole model, 
     #   when True we only update the reshaped layer params
     feature_extract = True
+    model_ft, input_size = initialize_model(model_name, num_classes, feature_extract, use_pretrained=True)
 
     # Data augmentation and normalization for training
     # Just normalization for validation
@@ -208,7 +211,7 @@ def main(args):
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
-        'val': transforms.Compose([
+        'valid': transforms.Compose([
             transforms.Resize(input_size),
             transforms.CenterCrop(input_size),
             transforms.ToTensor(),
@@ -219,9 +222,9 @@ def main(args):
     print("Initializing Datasets and Dataloaders...")
 
     # Create training and validation datasets
-    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'val']}
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'valid']}
     # Create training and validation dataloaders
-    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size, shuffle=True) for x in ['train', 'val']}
+    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size, shuffle=True) for x in ['train', 'valid']}
 
     
 
@@ -260,11 +263,12 @@ def main(args):
     '''
     
     hook = smd.Hook.create_from_json_file()
-    hook.register_hook(model)
+    hook.register_module(model_ft)
     model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, num_epochs=num_epochs, device=device, hook=hook)
     
 
-    
+    torch.save(model_ft.state_dict(), os.path.join(model_dir, 'model.pt'))
+
     
     
     
@@ -304,6 +308,8 @@ if __name__=='__main__':
         help="learning rate to train model"
     )
 
+    parser.add_argument('--data-dir', type=str, default=os.environ['SM_CHANNEL_TRAIN'], help='default direction')
+    parser.add_argument('--model-dir', type=str, default=os.environ['SM_MODEL_DIR'], help='default direction')
     
     args=parser.parse_args()
     
