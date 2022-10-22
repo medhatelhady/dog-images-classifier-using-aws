@@ -57,7 +57,7 @@ profilers to detect:
 ### Results
 What are the results/insights did you get by profiling/debugging your model?
 according to the profiling and debugging, the model has poor intial weights. the model was suffering from overfitting but the debugger didn't detect that and it was obivious because the train accuracy exceed 90% while valid accuracy was less than 80%. 
-
+<img src='images\plot.png'>
 ## Model Deployment
 Give an overview of the deployed model and instructions on how to query the endpoint with a sample input.
 
